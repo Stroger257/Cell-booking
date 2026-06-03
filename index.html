@@ -24,11 +24,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei
 .nav-btn.active{background:var(--blue-light);color:var(--blue);font-weight:700}
 .name-section{margin-top:auto;border-top:1px solid var(--border);padding-top:12px}
 .name-label{font-size:12px;color:var(--text3);margin-bottom:6px}
-.name-input,.form-input,.filter-select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:#fff;font-size:14px;outline:none}
-.name-input:focus,.form-input:focus,.filter-select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.name-input,.form-input,.filter-select,.zone-select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:#fff;font-size:14px;outline:none}
+.name-input:focus,.form-input:focus,.filter-select:focus,.zone-select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
 .main{flex:1;padding:26px;overflow-x:hidden}
 .section{display:none}.section.visible{display:block}
 .page-title{font-size:22px;font-weight:800;margin-bottom:6px}.page-sub{font-size:14px;color:var(--text2);margin-bottom:18px}
+.top-form{background:white;border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:16px;box-shadow:var(--shadow)}
+.top-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.top-form label{display:block;font-size:13px;color:var(--text2);margin-bottom:6px}
 .date-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
 .date-btn,.btn{padding:9px 15px;border:1px solid var(--border);border-radius:10px;background:white;color:var(--text);font-size:14px;cursor:pointer}
 .date-btn:disabled{opacity:.4;cursor:not-allowed}.date-display{font-size:18px;font-weight:800}.date-tag{background:var(--blue-light);color:var(--blue);border-radius:999px;padding:4px 10px;font-size:13px}
@@ -63,9 +66,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei
 @media(min-width:900px){.slot-list{grid-template-columns:repeat(4,1fr)}}
 @media(max-width:700px){
   .layout{display:block}.sidebar{width:100%;height:auto;position:static;border-right:0;border-bottom:1px solid var(--border);padding:16px;gap:8px}
-  .logo{border-bottom:0;margin-bottom:2px;padding-bottom:6px}.nav-btn{display:inline-block;width:31%;text-align:center}.name-section{margin-top:8px}
+  .logo{border-bottom:0;margin-bottom:2px;padding-bottom:6px}.nav-btn{display:inline-block;width:31%;text-align:center}.name-section{display:none}
   .main{padding:18px 16px}.page-title{font-size:22px}.date-display{font-size:18px}.slot-list{grid-template-columns:repeat(2,1fr)}
   .slot-btn{min-height:56px;font-size:14px}.date-bar{gap:8px}.date-btn{padding:9px 13px}.filter-select{width:100%}
+  .top-form-grid{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -78,13 +82,31 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei
     <button class="nav-btn" onclick="switchTab('admin')" id="nav-admin">🔐 管理</button>
     <div class="name-section">
       <div class="name-label">当前用户</div>
-      <input class="name-input" id="username" type="text" placeholder="请输入您的姓名" oninput="onNameChange()" />
+      <input class="name-input" id="username-side" type="text" placeholder="请输入您的姓名" oninput="syncNameFromSide()" />
     </div>
   </nav>
   <main class="main">
     <section class="section visible" id="sec-book">
       <div class="page-title">预约细胞台</div>
-      <div class="page-sub">先输入姓名，再点击空闲时间段预约；蓝色为您的预约，点击可取消</div>
+      <div class="page-sub">请先输入姓名并选择区域，再查看对应台位的可预约时间段</div>
+
+      <div class="top-form">
+        <div class="top-form-grid">
+          <div>
+            <label>姓名</label>
+            <input class="name-input" id="username" type="text" placeholder="请输入您的姓名" oninput="onNameChange()" />
+          </div>
+          <div>
+            <label>区域</label>
+            <select class="zone-select" id="zone-select" onchange="onZoneChange()">
+              <option value="">请选择东区/西区</option>
+              <option value="东区">东区</option>
+              <option value="西区">西区</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       <div class="date-bar">
         <button class="date-btn" id="prev-btn" onclick="changeDay(-1)">‹ 前一天</button>
         <span class="date-display" id="date-label"></span><span class="date-tag" id="date-tag"></span>
@@ -120,7 +142,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei
             <select class="filter-select" id="filter-bench" onchange="renderAdminTable()"><option value="">全部台位</option></select>
             <select class="filter-select" id="filter-user" onchange="renderAdminTable()"><option value="">全部用户</option></select>
           </div>
+          <input class="filter-select" id="export-start" type="date" title="导出开始日期" />
+          <input class="filter-select" id="export-end" type="date" title="导出结束日期" />
           <button class="btn btn-green" onclick="exportExcel()">📥 导出 Excel</button>
+          <button class="btn" onclick="setExportThisMonth()">本月</button>
+          <button class="btn" onclick="clearExportRange()">全部</button>
           <button class="btn" onclick="manualRefresh()">刷新</button>
           <button class="btn" onclick="adminLogout()">退出</button>
         </div>
@@ -136,7 +162,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei
 
 <script>
 const JSONBIN_BIN_ID = '6a2007e3da38895dfe805a3f';
-const JSONBIN_API_KEY = '$2a$10$PtHRo4NP.VHJFlMzK6St0Ok2yvRYIcBaPCP.kaHA7fopkzGKHEbIK';
+const JSONBIN_API_KEY = '这里填你的X-MASTER-KEY';
 const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
 
 const ADMIN_PASSWORD = 'admin888';
@@ -146,12 +172,18 @@ const BENCHES = [
   {id:'W1',name:'西区1号',zone:'西区'},{id:'W2',name:'西区2号',zone:'西区'},
   {id:'W3',name:'西区3号',zone:'西区'},{id:'W4',name:'西区4号',zone:'西区'}
 ];
-const TIME_SLOTS = [
-  '08:00-09:00','09:00-10:00','10:00-11:00','11:00-12:00',
-  '12:00-13:00','13:00-14:00','14:00-15:00','15:00-16:00',
-  '16:00-17:00','17:00-18:00','18:00-19:00','19:00-20:00',
-  '20:00-21:00','21:00-22:00'
-];
+
+function buildTimeSlots(){
+  const slots = [];
+  for(let h = 6; h < 24; h++){
+    const h1 = String(h).padStart(2,'0');
+    const h2 = String(h + 1).padStart(2,'0');
+    slots.push(`${h1}:00-${h1}:30`);
+    slots.push(`${h1}:30-${h2}:00`);
+  }
+  return slots;
+}
+const TIME_SLOTS = buildTimeSlots();
 
 let currentOffset=0, bookings={}, actionLogs=[], adminLogged=false, isSaving=false;
 const DAY_TAGS=['今天','明天','后天','大后天'];
@@ -160,20 +192,12 @@ function getDateStr(offset){const d=new Date();d.setDate(d.getDate()+offset);ret
 function getTodayStr(){return getDateStr(0)}
 function getNowText(){const d=new Date();return d.toLocaleString('zh-CN',{hour12:false})}
 function getUser(){return document.getElementById('username').value.trim()}
+function getZone(){return document.getElementById('zone-select').value}
 function showToast(msg,type='success'){const t=document.getElementById('toast');t.textContent=msg;t.className=`toast toast-${type}`;t.style.display='block';clearTimeout(t._tid);t._tid=setTimeout(()=>t.style.display='none',2600)}
 function cleanOldBookings(){const today=getTodayStr();Object.keys(bookings).forEach(d=>{if(d<today)delete bookings[d]})}
 function benchName(benchId){const b=BENCHES.find(x=>x.id===benchId);return b?`${b.zone} ${b.name}`:benchId}
 function addLog(action,dateStr,slot,benchId,bookedUser,operator){
-  actionLogs.push({
-    time:getNowText(),
-    action,
-    date:dateStr,
-    slot,
-    benchId,
-    bench:benchName(benchId),
-    bookedUser:bookedUser || '',
-    operator:operator || '',
-  });
+  actionLogs.push({time:getNowText(),action,date:dateStr,slot,benchId,bench:benchName(benchId),bookedUser:bookedUser||'',operator:operator||''});
 }
 
 async function load(){
@@ -201,12 +225,35 @@ function switchTab(name){
   ['book','mine','admin'].forEach(n=>{document.getElementById('sec-'+n).classList.toggle('visible',n===name);document.getElementById('nav-'+n).classList.toggle('active',n===name)});
   if(name==='mine')renderMine(); if(name==='admin')renderAdminIfLogged();
 }
-function onNameChange(){localStorage.setItem('cell_booking_username',getUser());renderGrid();renderMine()}
+function onNameChange(){
+  const user = getUser();
+  const side = document.getElementById('username-side');
+  if(side) side.value = user;
+  localStorage.setItem('cell_booking_username',user);
+  renderGrid();renderMine();
+}
+function syncNameFromSide(){
+  const v = document.getElementById('username-side').value.trim();
+  document.getElementById('username').value = v;
+  localStorage.setItem('cell_booking_username',v);
+  renderGrid();renderMine();
+}
+function onZoneChange(){
+  localStorage.setItem('cell_booking_zone', getZone());
+  renderGrid();
+}
 function changeDay(d){const n=currentOffset+d;if(n<0||n>MAX_AHEAD_DAYS)return;currentOffset=n;renderGrid()}
-function checkConflict(dateStr,slot,skipBenchId,user){const day=bookings[dateStr]||{};for(const b of BENCHES){if(b.id!==skipBenchId&&day[`${b.id}__${slot}`]===user)return b.name}return null}
+function checkConflict(dateStr,slot,skipBenchId,user){
+  const day=bookings[dateStr]||{};
+  for(const b of BENCHES){
+    if(b.id!==skipBenchId && day[`${b.id}__${slot}`]===user) return b.name;
+  }
+  return null;
+}
 
 async function book(dateStr,slot,benchId){
   const user=getUser(); if(!user){showToast('请先输入姓名','error');return}
+  const zone=getZone(); if(!zone){showToast('请先选择东区或西区','error');return}
   await load();
   if(!bookings[dateStr])bookings[dateStr]={};
   const key=`${benchId}__${slot}`;
@@ -244,19 +291,25 @@ function renderGrid(){
   document.getElementById('next-btn').disabled=currentOffset>=MAX_AHEAD_DAYS;
 
   const user=getUser();
+  const zone=getZone();
+
+  if(!user && !zone){
+    document.getElementById('grid').innerHTML=`<div class="notice"><div class="big">👤</div><b>请先输入姓名并选择区域</b><div>完成后即可查看东区或西区台位的预约时间段。</div></div>`;
+    return;
+  }
   if(!user){
-    document.getElementById('grid').innerHTML=`
-      <div class="notice">
-        <div class="big">👤</div>
-        <b>请先输入姓名</b>
-        <div>输入后即可查看各台位的可预约时间段。</div>
-      </div>`;
+    document.getElementById('grid').innerHTML=`<div class="notice"><div class="big">👤</div><b>请先输入姓名</b><div>输入姓名后即可查看并预约 ${zone} 台位。</div></div>`;
+    return;
+  }
+  if(!zone){
+    document.getElementById('grid').innerHTML=`<div class="notice"><div class="big">📍</div><b>请先选择东区或西区</b><div>选择区域后只显示该区域的台位。</div></div>`;
     return;
   }
 
   const day=bookings[dateStr]||{};
+  const benches = BENCHES.filter(b=>b.zone===zone);
   let html='<div class="mobile-book-wrap">';
-  BENCHES.forEach(b=>{
+  benches.forEach(b=>{
     html+=`<div class="bench-card"><div class="bench-title"><span>${b.name}</span><em>${b.zone}</em></div><div class="slot-list">`;
     TIME_SLOTS.forEach(slot=>{
       const key=`${b.id}__${slot}`, who=day[key];
@@ -324,23 +377,98 @@ function renderLogTable(){
   if(!logs.length){tb.innerHTML='<tr><td colspan="7" class="empty">暂无操作日志</td></tr>';return}
   tb.innerHTML=logs.map(l=>`<tr><td>${l.time||''}</td><td>${l.action||''}</td><td>${l.date||''}</td><td>${l.slot||''}</td><td>${l.bench||l.benchId||''}</td><td>${l.bookedUser||''}</td><td>${l.operator||''}</td></tr>`).join('');
 }
+function getExportRange(){
+  const start = document.getElementById('export-start')?.value || '';
+  const end = document.getElementById('export-end')?.value || '';
+  if(start && end && start > end){
+    showToast('导出开始日期不能晚于结束日期','error');
+    return null;
+  }
+  return {start,end};
+}
+function inDateRange(date, range){
+  if(!range) return false;
+  if(range.start && date < range.start) return false;
+  if(range.end && date > range.end) return false;
+  return true;
+}
+function setExportThisMonth(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const first = `${y}-${m}-01`;
+  const lastDate = new Date(y, d.getMonth()+1, 0).getDate();
+  const last = `${y}-${m}-${String(lastDate).padStart(2,'0')}`;
+  document.getElementById('export-start').value = first;
+  document.getElementById('export-end').value = last;
+  showToast('已设置为本月导出范围');
+}
+function clearExportRange(){
+  document.getElementById('export-start').value = '';
+  document.getElementById('export-end').value = '';
+  showToast('已设置为导出全部日期');
+}
 function exportExcel(){
-  const items=getAllItems();
+  const range = getExportRange();
+  if(!range) return;
+
+  const items = getAllItems().filter(it => inDateRange(it.date, range));
+  const logs = actionLogs.filter(l => inDateRange(l.date || '', range));
+
+  if(!items.length && !logs.length){
+    showToast('该日期范围内暂无预约或操作日志','error');
+    return;
+  }
+
   const wb=XLSX.utils.book_new();
+
+  const rangeText = range.start || range.end ? `${range.start || '最早'}_至_${range.end || '最晚'}` : '全部日期';
+
+  const infoRows = [
+    ['导出范围', rangeText],
+    ['导出时间', getNowText()],
+    ['当前预约记录数', items.length],
+    ['操作日志记录数', logs.length]
+  ];
+  const wsInfo = XLSX.utils.aoa_to_sheet(infoRows);
+  wsInfo['!cols'] = [{wch:18},{wch:28}];
+  XLSX.utils.book_append_sheet(wb, wsInfo, '导出说明');
 
   const rows=[['日期','时间段','区域','台位','预约人']];
   items.forEach(it=>rows.push([it.date,it.slot,it.bench?.zone||'',it.bench?.name||it.benchId,it.who]));
-  const ws=XLSX.utils.aoa_to_sheet(rows); ws['!cols']=[{wch:12},{wch:14},{wch:8},{wch:12},{wch:12}]; XLSX.utils.book_append_sheet(wb,ws,'当前预约');
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:12},{wch:14},{wch:8},{wch:12},{wch:12}];
+  XLSX.utils.book_append_sheet(wb,ws,'当前预约');
 
   const logRows=[['操作时间','操作类型','日期','时间段','台位','预约人','操作者']];
-  actionLogs.forEach(l=>logRows.push([l.time||'',l.action||'',l.date||'',l.slot||'',l.bench||l.benchId||'',l.bookedUser||'',l.operator||'']));
-  const wsLog=XLSX.utils.aoa_to_sheet(logRows); wsLog['!cols']=[{wch:20},{wch:12},{wch:12},{wch:14},{wch:16},{wch:12},{wch:12}]; XLSX.utils.book_append_sheet(wb,wsLog,'操作日志');
+  logs.forEach(l=>logRows.push([l.time||'',l.action||'',l.date||'',l.slot||'',l.bench||l.benchId||'',l.bookedUser||'',l.operator||'']));
+  const wsLog=XLSX.utils.aoa_to_sheet(logRows);
+  wsLog['!cols']=[{wch:20},{wch:12},{wch:12},{wch:14},{wch:16},{wch:12},{wch:12}];
+  XLSX.utils.book_append_sheet(wb,wsLog,'操作日志');
 
-  BENCHES.forEach(b=>{const r=[['日期','时间段','预约人']];items.filter(i=>i.benchId===b.id).forEach(i=>r.push([i.date,i.slot,i.who]));if(r.length>1){const s=XLSX.utils.aoa_to_sheet(r);XLSX.utils.book_append_sheet(wb,s,`${b.zone}${b.name}`)}});
-  XLSX.writeFile(wb,`细胞房预约记录_${getTodayStr()}.xlsx`); showToast('Excel导出成功');
+  BENCHES.forEach(b=>{
+    const r=[['日期','时间段','预约人']];
+    items.filter(i=>i.benchId===b.id).forEach(i=>r.push([i.date,i.slot,i.who]));
+    if(r.length>1){
+      const s=XLSX.utils.aoa_to_sheet(r);
+      s['!cols']=[{wch:12},{wch:14},{wch:12}];
+      XLSX.utils.book_append_sheet(wb,s,`${b.zone}${b.name}`);
+    }
+  });
+
+  const safeRangeText = rangeText.replace(/[\\/:*?"<>|]/g,'-');
+  XLSX.writeFile(wb,`细胞房预约记录_${safeRangeText}.xlsx`);
+  showToast('Excel导出成功');
 }
 (async function init(){
-  const saved=localStorage.getItem('cell_booking_username'); if(saved)document.getElementById('username').value=saved;
+  const saved=localStorage.getItem('cell_booking_username');
+  if(saved){
+    document.getElementById('username').value=saved;
+    const side=document.getElementById('username-side');
+    if(side) side.value=saved;
+  }
+  const savedZone=localStorage.getItem('cell_booking_zone');
+  if(savedZone) document.getElementById('zone-select').value=savedZone;
   await load(); renderGrid();
 })();
 </script>
