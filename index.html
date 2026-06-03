@@ -47,7 +47,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei
 .slot-free{background:var(--surface2);color:var(--text)}
 .slot-free:hover{background:var(--blue-light);color:var(--blue)}
 .slot-mine{background:var(--blue-light);color:var(--blue);font-weight:800}
-.slot-taken{background:var(--surface2);color:var(--text3);opacity:.6;cursor:not-allowed}
+.slot-taken{background:var(--surface2);color:var(--text3);opacity:.75;cursor:not-allowed;word-break:break-all}
 .slot-conflict{background:var(--amber-light);color:var(--amber);cursor:not-allowed}
 .card{background:white;border:1px solid var(--border);border-radius:16px;padding:14px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;box-shadow:var(--shadow)}
 .card-date{font-weight:800;margin-right:8px}.card-meta{font-size:13px;color:var(--text2)}
@@ -321,7 +321,7 @@ function renderGrid(){
       }else if(who===user){
         html+=`<button class="slot-btn slot-mine" onclick="cancel('${dateStr}','${slot}','${b.id}')">${slot}<br>我的预约</button>`;
       }else{
-        html+=`<button class="slot-btn slot-taken" disabled title="${who}">${slot}<br>${who.slice(0,3)}…</button>`;
+        html+=`<button class="slot-btn slot-taken" disabled title="${who}">${slot}<br>${who}</button>`;
       }
     });
     html+='</div></div>';
